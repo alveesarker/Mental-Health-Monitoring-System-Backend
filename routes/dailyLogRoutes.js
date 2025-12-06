@@ -1,0 +1,21 @@
+// routes/dailyLog.routes.js
+const express = require("express");
+const router = express.Router();
+const controller = require("../controllers/dailyLogController");
+
+// GET all daily logs (optional: ?patientID=3)
+router.get("/", controller.getAllLogs);
+
+// GET single log
+router.get("/:patientID/:timestamp", controller.getLog);
+
+// CREATE new log
+router.post("/", controller.createLog);
+
+// UPDATE log
+router.put("/:patientID/:timestamp", controller.updateLog);
+
+// DELETE log
+router.delete("/:patientID/:timestamp", controller.deleteLog);
+
+module.exports = router;
