@@ -15,7 +15,7 @@ const getById = async (id) => {
 };
 
 // CREATE ANALYSIS
-const create = async(analysis) => {
+const create = async (analysis) => {
     const { riskScore, sentimentScore, issue, emotionalClassification } = analysis;
 
     const sql = `
@@ -23,18 +23,16 @@ const create = async(analysis) => {
     VALUES (?, ?, ?, ?)
   `;
 
-       await db.query(
-            sql,
-            [riskScore, sentimentScore, issue, emotionalClassification],
-            (err, results) => {
-                if (err) return reject(err);
-                resolve({ analysisID: results.insertId });
-            }
-        );
+    await db.query(
+        sql,
+        [riskScore, sentimentScore, issue, emotionalClassification]
+    );
+
+    return { analysisID: result.insertId };
 };
 
 // UPDATE ANALYSIS
-const update = async(id, analysis) => {
+const update = async (id, analysis) => {
     const { riskScore, sentimentScore, issue, emotionalClassification } = analysis;
 
     const sql = `
@@ -44,7 +42,7 @@ const update = async(id, analysis) => {
   `;
 
 
-    await db.query(sql,[riskScore, sentimentScore, issue, emotionalClassification, id]);
+    await db.query(sql, [riskScore, sentimentScore, issue, emotionalClassification, id]);
     return true;
 };
 
