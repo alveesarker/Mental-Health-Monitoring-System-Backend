@@ -13,12 +13,14 @@ const patientRoutes = require("./routes/patientRoutes");
 const counsellorRoute = require("./routes/counsellorRoutes")
 const sessionRoutes = require("./routes/sessionRoutes");
 const dailyLogRoutes = require("./routes/dailyLogRoutes");
-const recommendationRoutes = require("./routes/recommendationRoutes")
+const recommendationRoutes = require("./routes/recommendationRoutes");
+const analysisRoutes = require("./routes/analysisRoutes");
 app.use("/patients", patientRoutes);
 app.use("/counsellor", counsellorRoute);
 app.use("/sessions", sessionRoutes);
 app.use("/daily-logs", dailyLogRoutes);
-app.use("/recommendations", recommendationRoutes)
+app.use("/recommendations", recommendationRoutes);
+app.use("/analysis", analysisRoutes)
 
 
 // Default route

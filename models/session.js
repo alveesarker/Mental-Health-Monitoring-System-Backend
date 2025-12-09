@@ -22,13 +22,11 @@ const getAll = async () => {
     if (r.onlineLink) {
       return {
         ...r,
-        sessionType: "online",
         link: r.onlineLink
       };
     } else {
       return {
         ...r,
-        sessionType: "offline",
         counsellingCenter: r.counsellingCenter,
         roomNumber: r.roomNumber
       };
@@ -39,82 +37,82 @@ const getAll = async () => {
 
 // CREATE SESSION
 const create = (sessionData, typeData, type) => {
-    const { sessionDate, status, duration, patientID, counsellorID, sessionTime } = sessionData;
+  const { sessionDate, status, duration, patientID, counsellorID, sessionTime } = sessionData;
 
-    const insertSession = `
+  const insertSession = `
       INSERT INTO session(sessionDate, status, duration, patientID, counsellorID, sessionTime)
       VALUES (?, ?, ?, ?, ?)
     `;
 
-    db.query(
-      insertSession,
-      [sessionDate, status, duration, patientID, counsellorID, sessionTime],
-      (err, res1) => {
-        if (err) return reject(err);
-
-        const sessionID = res1.insertId;
-
-        if (type === "online") {
-          db.query(
-            `INSERT INTO online(sessionID, link) VALUES (?, ?)`,
-            [sessionID, typeData.link],
-            err => err ? reject(err) : resolve({ sessionID })
-          );
-        } else {
-          db.query(
-            `INSERT INTO offline(sessionID, counsellingCenter, roomNumber) VALUES (?, ?, ?)`,
-            [sessionID, typeData.counsellingCenter, typeData.roomNumber],
-            err => err ? reject(err) : resolve({ sessionID })
-          );
-        }
-      }
-    );
-};
-
-// UPDATE SESSION
-const update = (sessionID, sessionData, typeData, type) => {
-    const { sessionDate, status, duration, sessionTime } = sessionData;
-
-    const q = `
-      UPDATE session 
-      SET sessionDate=?, status=?, duration=?, sessionTime=? 
-      WHERE sessionID=?
-    `;
-
-    // Update main table
-    db.query(q, [sessionDate, status, duration, sessionTime, sessionID], (err) => {
+  db.query(
+    insertSession,
+    [sessionDate, status, duration, patientID, counsellorID, sessionTime],
+    (err, res1) => {
       if (err) return reject(err);
 
-      // Delete existing type rows safely
-      db.query(`DELETE FROM online WHERE sessionID=?`, [sessionID], (err) => {
-        if (err) return reject(err);
+      const sessionID = res1.insertId;
 
-        db.query(`DELETE FROM offline WHERE sessionID=?`, [sessionID], (err) => {
-          if (err) return reject(err);
+      if (type === "online") {
+        db.query(
+          `INSERT INTO online(sessionID, link) VALUES (?, ?)`,
+          [sessionID, typeData.link],
+          err => err ? reject(err) : resolve({ sessionID })
+        );
+      } else {
+        db.query(
+          `INSERT INTO offline(sessionID, counsellingCenter, roomNumber) VALUES (?, ?, ?)`,
+          [sessionID, typeData.counsellingCenter, typeData.roomNumber],
+          err => err ? reject(err) : resolve({ sessionID })
+        );
+      }
+    }
+  );
+};
 
-          // Insert new type record
-          if (type === "online") {
-            if (!typeData.link) return reject(new Error("Missing link"));
+// UPDATE SESSION (Corrected)
+const update = async (sessionID, sessionData, typeData, type) => {
+  const { sessionDate, status, duration, sessionTime } = sessionData;
 
-            return db.query(
-              `INSERT INTO online(sessionID, link) VALUES (?, ?)`,
-              [sessionID, typeData.link],
-              (err) => (err ? reject(err) : resolve())
-            );
-          }
+  try {
 
-          if (!typeData.counsellingCenter || !typeData.roomNumber) {
-            return reject(new Error("Missing offline data"));
-          }
+    await db.query(
+      `UPDATE session 
+       SET sessionDate=?, status=?, duration=?, sessionTime=?, sessionType=?
+       WHERE sessionID=?`,
+      [sessionDate, status, duration, sessionTime, type, sessionID]
+    );
 
-          return db.query(
-            `INSERT INTO offline(sessionID, counsellingCenter, roomNumber) VALUES (?, ?, ?)`,
-            [sessionID, typeData.counsellingCenter, typeData.roomNumber],
-            (err) => (err ? reject(err) : resolve())
-          );
-        });
-      });
-    });
+    // Delete old types
+    await db.query(`DELETE FROM online WHERE sessionID=?`, [sessionID]);
+    await db.query(`DELETE FROM offline WHERE sessionID=?`, [sessionID]);
+
+    // Insert new type
+    if (type === "online") {
+      if (!typeData.link) throw new Error("Missing link");
+
+      await db.query(
+        `INSERT INTO online(sessionID, link) VALUES (?, ?)`,
+        [sessionID, typeData.link]
+      );
+    } else {
+      if (!typeData.counsellingCenter || !typeData.roomNumber)
+        throw new Error("Missing offline data");
+
+      await db.query(
+        `INSERT INTO offline(sessionID, counsellingCenter, roomNumber) VALUES (?, ?, ?)`,
+        [
+          sessionID,
+          typeData.counsellingCenter,
+          typeData.roomNumber,
+        ]
+      );
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Error:", err);
+    throw err;
+  }
 };
 
 
@@ -140,14 +138,14 @@ const getSessionDetailsByID = async (sessionID) => {
 
 // DELETE
 const remove = (sessionID) => {
-    db.query(`DELETE FROM online WHERE sessionID=?`, [sessionID]);
-    db.query(`DELETE FROM offline WHERE sessionID=?`, [sessionID]);
+  db.query(`DELETE FROM online WHERE sessionID=?`, [sessionID]);
+  db.query(`DELETE FROM offline WHERE sessionID=?`, [sessionID]);
 
-    db.query(
-      `DELETE FROM session WHERE sessionID=?`,
-      [sessionID],
-      err => err ? reject(err) : resolve()
-    );
+  db.query(
+    `DELETE FROM session WHERE sessionID=?`,
+    [sessionID],
+    err => err ? reject(err) : resolve()
+  );
 };
 
 module.exports = { getAll, create, update, remove, getSessionDetailsByID };
