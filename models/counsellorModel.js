@@ -1,77 +1,41 @@
-// models/counsellorModels.js
-const db = require("../config/db");
+const db = require("../db");
 
-
+/* ================= GET ALL COUNSELLOR NAMES ================= */
 exports.getAllCounsellorsName = async () => {
-  const [rows] = await db.query(
-    "SELECT counsellorID, name FROM counsellor"
-  );
-  return rows;
+    const [rows] = await db.query(
+        `SELECT c.counsellorID, u.name 
+     FROM counsellor c 
+     JOIN user_t u ON c.counsellorID = u.userID`
+    );
+    return rows;
 };
 
-// INSERT COUNSELLOR (main + sub tables)
+/* ================= ADD COUNSELLOR ================= */
 exports.insertCounsellor = async (data) => {
+    const { name, email, contactNumber, password, yearOfExperience, availability } = data;
+
     const conn = await db.getConnection();
     try {
         await conn.beginTransaction();
 
-        const {
-            counsellor,
-            specializations,
-            qualifications,
-            schedule
-        } = data;
-
-        // Insert into Counsellor
-        const [mainResult] = await conn.query(
-            `INSERT INTO Counsellor 
-            (name, email, yearOfExperience, contactNumber, availability, street, city, postalCode)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                counsellor.name,
-                counsellor.email,
-                counsellor.yearOfExperience,
-                counsellor.contactNumber,
-                counsellor.availability,
-                counsellor.street,
-                counsellor.city,
-                counsellor.postalCode
-            ]
+        // 1. Insert into user_t
+        const [userResult] = await conn.query(
+            `INSERT INTO user_t (name, email, contactNumber, role, password)
+       VALUES (?, ?, ?, 'counsellor', ?)`,
+            [name, email, contactNumber, password]
         );
 
-        const counsellorID = mainResult.insertId;
+        const userID = userResult.insertId;
 
-        // Insert Specializations
-        for (let sp of specializations) {
-            await conn.query(
-                `INSERT INTO Counsellor_Specialization (counsellorID, specialization)
-                 VALUES (?, ?)`,
-                [counsellorID, sp]
-            );
-        }
-
-        // Insert Qualifications
-        for (let q of qualifications) {
-            await conn.query(
-                `INSERT INTO Counsellor_Qualification 
-                (counsellorID, qualificationName, institutionName, startDate, completionDate)
-                VALUES (?, ?, ?, ?, ?)`,
-                [counsellorID, q.name, q.institution, q.start, q.end]
-            );
-        }
-
-        // Insert Schedule
-        for (let s of schedule) {
-            await conn.query(
-                `INSERT INTO Counsellor_Schedule
-                 (counsellorID, day, startTime, endTime, mode)
-                 VALUES (?, ?, ?, ?, ?)`,
-                [counsellorID, s.day, s.startTime, s.endTime, s.mode]
-            );
-        }
+        // 2. Insert into counsellor
+        await conn.query(
+            `INSERT INTO counsellor (counsellorID, email, yearOfExperience, availability)
+       VALUES (?, ?, ?, ?)`,
+            [userID, email, yearOfExperience, availability]
+        );
 
         await conn.commit();
-        return counsellorID;
+        return userID;
 
     } catch (err) {
         await conn.rollback();
@@ -81,89 +45,38 @@ exports.insertCounsellor = async (data) => {
     }
 };
 
-
-
-// PARTIAL UPDATE
+/* ================= UPDATE COUNSELLOR ================= */
 exports.updateCounsellor = async (id, data) => {
+    const { name, email, contactNumber, password, yearOfExperience, availability } = data;
     const conn = await db.getConnection();
     try {
         await conn.beginTransaction();
 
-        const { counsellor, specializations, qualifications, schedule } = data;
+        // Update user_t
+        const fields = [];
+        const values = [];
 
-        // -------------------------------
-        // 1️⃣ UPDATE MAIN COUNSELLOR DATA (Partial)
-        // -------------------------------
-        if (counsellor && Object.keys(counsellor).length > 0) {
-            const fields = [];
-            const values = [];
+        if (name) { fields.push("name=?"); values.push(name); }
+        if (email) { fields.push("email=?"); values.push(email); }
+        if (contactNumber) { fields.push("contactNumber=?"); values.push(contactNumber); }
+        if (password) { fields.push("password=?"); values.push(password); }
 
-            for (let key in counsellor) {
-                fields.push(`${key}=?`);
-                values.push(counsellor[key]);
-            }
+        if (fields.length > 0) {
             values.push(id);
-
-            await conn.query(
-                `UPDATE Counsellor SET ${fields.join(", ")} WHERE counsellorID=?`,
-                values
-            );
+            await conn.query(`UPDATE user_t SET ${fields.join(", ")} WHERE userID=?`, values);
         }
 
-        // -------------------------------
-        // 2️⃣ UPDATE SPECIALIZATIONS (Optional)
-        // -------------------------------
-        if (specializations) {
-            await conn.query(
-                "DELETE FROM Counsellor_Specialization WHERE counsellorID=?",
-                [id]
-            );
+        // Update counsellor table
+        const cFields = [];
+        const cValues = [];
 
-            for (let sp of specializations) {
-                await conn.query(
-                    `INSERT INTO Counsellor_Specialization (counsellorID, specialization)
-                     VALUES (?, ?)`,
-                    [id, sp]
-                );
-            }
-        }
+        if (email) { cFields.push("email=?"); cValues.push(email); }
+        if (yearOfExperience !== undefined) { cFields.push("yearOfExperience=?"); cValues.push(yearOfExperience); }
+        if (availability) { cFields.push("availability=?"); cValues.push(availability); }
 
-        // -------------------------------
-        // 3️⃣ UPDATE QUALIFICATIONS (Optional)
-        // -------------------------------
-        if (qualifications) {
-            await conn.query(
-                "DELETE FROM Counsellor_Qualification WHERE counsellorID=?",
-                [id]
-            );
-
-            for (let q of qualifications) {
-                await conn.query(
-                    `INSERT INTO Counsellor_Qualification
-                    (counsellorID, qualificationName, institutionName, startDate, completionDate)
-                    VALUES (?, ?, ?, ?, ?)`,
-                    [id, q.name, q.institution, q.start, q.end]
-                );
-            }
-        }
-
-        // -------------------------------
-        // 4️⃣ UPDATE SCHEDULE (Optional)
-        // -------------------------------
-        if (schedule) {
-            await conn.query(
-                "DELETE FROM Counsellor_Schedule WHERE counsellorID=?",
-                [id]
-            );
-
-            for (let s of schedule) {
-                await conn.query(
-                    `INSERT INTO Counsellor_Schedule
-                    (counsellorID, day, startTime, endTime, mode)
-                    VALUES (?, ?, ?, ?, ?)`,
-                    [id, s.day, s.startTime, s.endTime, s.mode]
-                );
-            }
+        if (cFields.length > 0) {
+            cValues.push(id);
+            await conn.query(`UPDATE counsellor SET ${cFields.join(", ")} WHERE counsellorID=?`, cValues);
         }
 
         await conn.commit();
@@ -177,42 +90,45 @@ exports.updateCounsellor = async (id, data) => {
     }
 };
 
-
-// DELETE COUNSELLOR (cascade manually)
+/* ================= DELETE COUNSELLOR ================= */
 exports.deleteCounsellor = async (id) => {
-    await db.query("DELETE FROM Counsellor_Specialization WHERE counsellorID=?", [id]);
-    await db.query("DELETE FROM Counsellor_Qualification WHERE counsellorID=?", [id]);
-    await db.query("DELETE FROM Counsellor_Schedule WHERE counsellorID=?", [id]);
-    await db.query("DELETE FROM Counsellor WHERE counsellorID=?", [id]);
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // Delete from counsellor table first
+        await conn.query("DELETE FROM counsellor WHERE counsellorID=?", [id]);
+        // Delete from user_t
+        await conn.query("DELETE FROM user_t WHERE userID=?", [id]);
+
+        await conn.commit();
+        return true;
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
 };
 
-
-// READ MAIN INFO (only basic data)
+/* ================= GET ALL COUNSELLORS ================= */
 exports.getCounsellorMain = async () => {
-    const [rows] = await db.query(
-        `SELECT * FROM Counsellor`
-    );
+    const [rows] = await db.query(`
+    SELECT c.counsellorID, u.name, u.email, u.contactNumber, c.yearOfExperience, c.availability
+    FROM counsellor c
+    JOIN user_t u ON c.counsellorID = u.userID
+  `);
     return rows;
 };
 
-// READ FULL INFO (specialization, qualification, schedule)
+/* ================= GET COUNSELLOR DETAILS BY ID ================= */
 exports.getCounsellorDetails = async (id) => {
-    const [specializations] = await db.query(
-        `SELECT specialization FROM Counsellor_Specialization WHERE counsellorID=?`,
-        [id]
-    );
+    const [rows] = await db.query(`
+    SELECT c.counsellorID, u.name, c.email, c.yearOfExperience, c.availability
+    FROM counsellor c
+    JOIN user_t u ON c.counsellorID = u.userID
+    WHERE c.counsellorID=?
+  `, [id]);
 
-    const [qualifications] = await db.query(
-        `SELECT qualificationName, institutionName, startDate, completionDate
-         FROM Counsellor_Qualification WHERE counsellorID=?`,
-        [id]
-    );
-
-    const [schedule] = await db.query(
-        `SELECT day, startTime, endTime, mode
-         FROM Counsellor_Schedule WHERE counsellorID=?`,
-        [id]
-    );
-
-    return { specializations, qualifications, schedule };
+    return rows[0];
 };

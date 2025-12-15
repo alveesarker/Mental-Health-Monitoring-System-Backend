@@ -1,5 +1,5 @@
 // models/dailyLog.model.js
-const db = require("../config/db");
+const db = require("../db");
 
 
 function toMysqlFormatLocal(ts) {
@@ -48,10 +48,21 @@ module.exports = {
     create: async (data) => {
         const { patientID, timestamp, mood, notes, stressLevel, sleepDuration } = data;
 
+        // 1️⃣ Check patient existence
+        const [patient] = await db.query(
+            `SELECT patientID FROM Patient WHERE patientID = ?`,
+            [patientID]
+        );
+
+        if (patient.length === 0) {
+            throw new Error("Patient does not exist");
+        }
+
+        // 2️⃣ Insert daily log
         await db.query(
-            `INSERT INTO DailyLog 
-        (patientID, timestamp, mood, notes, stressLevel, sleepDuration)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO DailyLog
+         (patientID, timestamp, mood, notes, stressLevel, sleepDuration)
+         VALUES (?, ?, ?, ?, ?, ?)`,
             [patientID, timestamp, mood, notes, stressLevel, sleepDuration]
         );
 

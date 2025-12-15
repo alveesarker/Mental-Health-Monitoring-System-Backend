@@ -1,6 +1,7 @@
-const db = require("../config/db");
+const db = require("../db");
 
 const getAll = async () => {
+  console.log("Hello");
   const q = `
     SELECT 
       s.*,
@@ -10,14 +11,14 @@ const getAll = async () => {
       f.counsellingCenter,
       f.roomNumber
     FROM session s
-    LEFT JOIN patient p ON s.patientID = p.patientID
-    LEFT JOIN counsellor c ON s.counsellorID = c.counsellorID
+    LEFT JOIN user_t p ON s.patientID = p.userID
+    LEFT JOIN user_t c ON s.counsellorID = c.userID
     LEFT JOIN online o ON s.sessionID = o.sessionID
     LEFT JOIN offline f ON s.sessionID = f.sessionID
   `;
 
   const [rows] = await db.query(q);
-
+console.log("h2");
   return rows.map(r => {
     if (r.onlineLink) {
       return {
@@ -75,6 +76,7 @@ const update = async (sessionID, sessionData, typeData, type) => {
 
   try {
 
+    console.log(status);
     await db.query(
       `UPDATE session 
        SET sessionDate=?, status=?, duration=?, sessionTime=?, sessionType=?

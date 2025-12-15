@@ -1,4 +1,4 @@
-const db = require("../config/db");
+const db = require("../db");
 
 // GET ALL ANALYSIS
 const getAll = async () => {
