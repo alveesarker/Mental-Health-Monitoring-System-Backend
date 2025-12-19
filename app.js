@@ -16,6 +16,8 @@ const recommendationRoutes = require("./routes/recommendationRoutes");
 const analysisRoutes = require("./routes/analysisRoutes");
 const crisisAlertRoutes = require("./routes/crisisAlertRoutes");
 const authRoutes = require('./routes/authRoutes');
+const progressRoute = require('./routes/progressRoutes');
+const ratingRoutes = require("./routes/ratingRouter");
 app.use("/patients", patientRoutes);
 app.use("/counsellor", counsellorRoute);
 app.use("/sessions", sessionRoutes);
@@ -23,8 +25,9 @@ app.use("/daily-logs", dailyLogRoutes);
 app.use("/recommendations", recommendationRoutes);
 app.use("/analysis", analysisRoutes);
 app.use("/crisisalerts", crisisAlertRoutes);
+app.use("/progress", progressRoute);
 app.use('/auth', authRoutes);
-
+app.use("/ratings", ratingRoutes);
 
 //
 

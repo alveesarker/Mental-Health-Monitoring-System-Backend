@@ -1,7 +1,6 @@
 const db = require("../db");
 
 const getAll = async () => {
-  console.log("Hello");
   const q = `
     SELECT 
       s.*,
@@ -18,7 +17,6 @@ const getAll = async () => {
   `;
 
   const [rows] = await db.query(q);
-console.log("h2");
   return rows.map(r => {
     if (r.onlineLink) {
       return {
@@ -150,4 +148,14 @@ const remove = (sessionID) => {
   );
 };
 
-module.exports = { getAll, create, update, remove, getSessionDetailsByID };
+
+//Return all session id's
+const getAllSessionID = async () => {
+  // db is a promise-based connection or pool
+  const [rows] = await db.query(`SELECT sessionID FROM session`);
+  return rows; // [{ sessionID: 1 }, { sessionID: 2 }, ...]
+};
+
+
+
+module.exports = { getAll, create, update, remove, getSessionDetailsByID, getAllSessionID };

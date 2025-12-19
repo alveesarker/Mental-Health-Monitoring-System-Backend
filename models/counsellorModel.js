@@ -12,30 +12,76 @@ exports.getAllCounsellorsName = async () => {
 
 /* ================= ADD COUNSELLOR ================= */
 exports.insertCounsellor = async (data) => {
-    const { name, email, contactNumber, password, yearOfExperience, availability } = data;
+    const {
+        counsellor,
+        specializations = [],
+        qualifications = [],
+        schedule = []
+    } = data;
+
+    const {
+        name,
+        email,
+        contactNumber,
+        yearOfExperience,
+        availability,
+        street,
+        city,
+        postalCode
+    } = counsellor;
 
     const conn = await db.getConnection();
     try {
         await conn.beginTransaction();
 
-        // 1. Insert into user_t
-        const [userResult] = await conn.query(
-            `INSERT INTO user_t (name, email, contactNumber, role, password)
-       VALUES (?, ?, ?, 'counsellor', ?)`,
-            [name, email, contactNumber, password]
+        // user_t
+        const [userRes] = await conn.query(
+            `INSERT INTO user_t 
+       (name, email, contactNumber, street, city, postalCode, role)
+       VALUES (?, ?, ?, ?, ?, ?, 'counsellor')`,
+            [name, email, contactNumber, street, city, postalCode]
         );
 
-        const userID = userResult.insertId;
+        const counsellorID = userRes.insertId;
 
-        // 2. Insert into counsellor
+        // counsellor
         await conn.query(
-            `INSERT INTO counsellor (counsellorID, email, yearOfExperience, availability)
-       VALUES (?, ?, ?, ?)`,
-            [userID, email, yearOfExperience, availability]
+            `INSERT INTO counsellor (counsellorID, yearOfExperience, availability)
+       VALUES (?, ?, ?)`,
+            [counsellorID, yearOfExperience, availability]
         );
+
+        // specializations
+        for (const s of specializations) {
+            await conn.query(
+                `INSERT INTO counsellor_specialization (counsellorID, specialization)
+         VALUES (?, ?)`,
+                [counsellorID, s]
+            );
+        }
+
+        // qualifications
+        for (const q of qualifications) {
+            await conn.query(
+                `INSERT INTO counsellor_qualification
+         (counsellorID, qualificationName, institutionName, startDate, completionDate)
+         VALUES (?, ?, ?, ?, ?)`,
+                [counsellorID, q.name, q.institution, q.start, q.end]
+            );
+        }
+
+        // schedule
+        for (const s of schedule) {
+            await conn.query(
+                `INSERT INTO counsellor_schedule
+         (counsellorID, day, startTime, endTime, mode)
+         VALUES (?, ?, ?, ?, ?)`,
+                [counsellorID, s.day, s.startTime, s.endTime, s.mode]
+            );
+        }
 
         await conn.commit();
-        return userID;
+        return counsellorID;
 
     } catch (err) {
         await conn.rollback();
@@ -45,38 +91,71 @@ exports.insertCounsellor = async (data) => {
     }
 };
 
+
 /* ================= UPDATE COUNSELLOR ================= */
 exports.updateCounsellor = async (id, data) => {
-    const { name, email, contactNumber, password, yearOfExperience, availability } = data;
+    const {
+        counsellor,
+        specializations = [],
+        qualifications = [],
+        schedule = []
+    } = data;
+
     const conn = await db.getConnection();
     try {
         await conn.beginTransaction();
 
-        // Update user_t
-        const fields = [];
-        const values = [];
+        // update user_t
+        await conn.query(
+            `UPDATE user_t
+       SET name=?, email=?, contactNumber=?, street=?, city=?, postalCode=?
+       WHERE userID=?`,
+            [
+                counsellor.name,
+                counsellor.email,
+                counsellor.contactNumber,
+                counsellor.street,
+                counsellor.city,
+                counsellor.postalCode,
+                id
+            ]
+        );
 
-        if (name) { fields.push("name=?"); values.push(name); }
-        if (email) { fields.push("email=?"); values.push(email); }
-        if (contactNumber) { fields.push("contactNumber=?"); values.push(contactNumber); }
-        if (password) { fields.push("password=?"); values.push(password); }
+        // update counsellor
+        await conn.query(
+            `UPDATE counsellor
+       SET yearOfExperience=?, availability=?
+       WHERE counsellorID=?`,
+            [counsellor.yearOfExperience, counsellor.availability, id]
+        );
 
-        if (fields.length > 0) {
-            values.push(id);
-            await conn.query(`UPDATE user_t SET ${fields.join(", ")} WHERE userID=?`, values);
+        // delete old children
+        await conn.query(`DELETE FROM counsellor_specialization WHERE counsellorID=?`, [id]);
+        await conn.query(`DELETE FROM counsellor_qualification WHERE counsellorID=?`, [id]);
+        await conn.query(`DELETE FROM counsellor_schedule WHERE counsellorID=?`, [id]);
+
+        // reinsert
+        for (const s of specializations) {
+            await conn.query(
+                `INSERT INTO counsellor_specialization VALUES (?, ?)`,
+                [id, s]
+            );
         }
 
-        // Update counsellor table
-        const cFields = [];
-        const cValues = [];
+        for (const q of qualifications) {
+            await conn.query(
+                `INSERT INTO counsellor_qualification
+         VALUES (?, ?, ?, ?, ?)`,
+                [id, q.name, q.institution, q.start, q.end]
+            );
+        }
 
-        if (email) { cFields.push("email=?"); cValues.push(email); }
-        if (yearOfExperience !== undefined) { cFields.push("yearOfExperience=?"); cValues.push(yearOfExperience); }
-        if (availability) { cFields.push("availability=?"); cValues.push(availability); }
-
-        if (cFields.length > 0) {
-            cValues.push(id);
-            await conn.query(`UPDATE counsellor SET ${cFields.join(", ")} WHERE counsellorID=?`, cValues);
+        for (const s of schedule) {
+            await conn.query(
+                `INSERT INTO counsellor_schedule
+         VALUES (?, ?, ?, ?, ?)`,
+                [id, s.day, s.startTime, s.endTime, s.mode]
+            );
         }
 
         await conn.commit();
@@ -89,6 +168,7 @@ exports.updateCounsellor = async (id, data) => {
         conn.release();
     }
 };
+
 
 /* ================= DELETE COUNSELLOR ================= */
 exports.deleteCounsellor = async (id) => {
@@ -96,13 +176,15 @@ exports.deleteCounsellor = async (id) => {
     try {
         await conn.beginTransaction();
 
-        // Delete from counsellor table first
-        await conn.query("DELETE FROM counsellor WHERE counsellorID=?", [id]);
-        // Delete from user_t
-        await conn.query("DELETE FROM user_t WHERE userID=?", [id]);
+        await conn.query(`DELETE FROM counsellor_schedule WHERE counsellorID=?`, [id]);
+        await conn.query(`DELETE FROM counsellor_qualification WHERE counsellorID=?`, [id]);
+        await conn.query(`DELETE FROM counsellor_specialization WHERE counsellorID=?`, [id]);
+        await conn.query(`DELETE FROM counsellor WHERE counsellorID=?`, [id]);
+        await conn.query(`DELETE FROM user_t WHERE userID=?`, [id]);
 
         await conn.commit();
         return true;
+
     } catch (err) {
         await conn.rollback();
         throw err;
@@ -111,24 +193,67 @@ exports.deleteCounsellor = async (id) => {
     }
 };
 
+
 /* ================= GET ALL COUNSELLORS ================= */
 exports.getCounsellorMain = async () => {
     const [rows] = await db.query(`
-    SELECT c.counsellorID, u.name, u.email, u.contactNumber, c.yearOfExperience, c.availability
+    SELECT 
+      c.counsellorID,
+      u.name,
+      u.email,
+      u.contactNumber,
+      u.street,
+      u.city,
+      u.postalCode,
+      c.yearOfExperience,
+      c.availability
     FROM counsellor c
-    JOIN user_t u ON c.counsellorID = u.userID
+    JOIN user_t u ON u.userID = c.counsellorID
   `);
     return rows;
 };
 
+
 /* ================= GET COUNSELLOR DETAILS BY ID ================= */
 exports.getCounsellorDetails = async (id) => {
-    const [rows] = await db.query(`
-    SELECT c.counsellorID, u.name, c.email, c.yearOfExperience, c.availability
+    const [[main]] = await db.query(`
+    SELECT 
+      c.counsellorID,
+      u.name,
+      u.email,
+      u.contactNumber,
+      u.street,
+      u.city,
+      u.postalCode,
+      c.yearOfExperience,
+      c.availability
     FROM counsellor c
-    JOIN user_t u ON c.counsellorID = u.userID
+    JOIN user_t u ON u.userID = c.counsellorID
     WHERE c.counsellorID=?
   `, [id]);
 
-    return rows[0];
+    const [specializations] = await db.query(
+        `SELECT specialization FROM counsellor_specialization WHERE counsellorID=?`,
+        [id]
+    );
+
+    const [qualifications] = await db.query(
+        `SELECT qualificationName, institutionName, startDate, completionDate
+     FROM counsellor_qualification WHERE counsellorID=?`,
+        [id]
+    );
+
+    const [schedule] = await db.query(
+        `SELECT day, startTime, endTime, mode
+     FROM counsellor_schedule WHERE counsellorID=?`,
+        [id]
+    );
+
+    return {
+        main,
+        specializations,
+        qualifications,
+        schedule
+    };
 };
+

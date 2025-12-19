@@ -158,26 +158,27 @@ exports.updatePatient = async (patientID, data) => {
 
 /* ================= DELETE PATIENT ================= */
 exports.deletePatient = async (patientID) => {
-  const conn = await db.getConnection();
-  try {
-    await conn.beginTransaction();
+  await db.query("DELETE FROM patient WHERE patientID = ?", [patientID]);
+  await db.query("DELETE FROM user_t WHERE userID = ?", [patientID]);
+  return true;
+  // const conn = await db.getConnection();
+  // try {
+  //   const [rows] = await conn.query(
+  //     "SELECT patientID FROM patient WHERE patientID = ?",
+  //     [patientID]
+  //   );
 
-    const [rows] = await conn.query(
-      "SELECT patientID FROM patient WHERE patientID = ?",
-      [patientID]
-    );
+  //   if (rows.length === 0) return false;
 
-    if (rows.length === 0) return false;
+  //   await conn.query("DELETE FROM patient WHERE patientID = ?", [patientID]);
+  //   await conn.query("DELETE FROM user_t WHERE userID = ?", [patientID]);
 
-    await conn.query("DELETE FROM patient WHERE patientID = ?", [patientID]);
-    await conn.query("DELETE FROM user_t WHERE userID = ?", [patientID]);
-
-    await conn.commit();
-    return true;
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
+  //   await conn.commit();
+  //   return true;
+  // } catch (err) {
+  //   await conn.rollback();
+  //   throw err;
+  // } finally {
+  //   conn.release();
+  // }
 };

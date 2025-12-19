@@ -35,7 +35,7 @@ const updateSession = async (req, res) => {
 };
 
 
- const fetchSessionDetails = async (req, res) => {
+const fetchSessionDetails = async (req, res) => {
   try {
     const sessionID = req.params.id;
 
@@ -54,6 +54,17 @@ const updateSession = async (req, res) => {
   }
 };
 
+const getAllIDs = async (req, res) => {
+  try {
+    const sessions = await Session.getAllSessionID(); 
+    const sessionIDs = sessions.map(s => s.sessionID.toString());
+    res.json(sessionIDs);
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+};
+
+
 
 
 const deleteSession = async (req, res) => {
@@ -70,5 +81,6 @@ module.exports = {
   createSession,
   updateSession,
   deleteSession,
-  fetchSessionDetails
+  fetchSessionDetails,
+  getAllIDs
 };
