@@ -23,11 +23,19 @@ exports.updateCounsellor = async (req, res) => {
 exports.fetchAllCounsellorsName = async (req, res) => {
   try {
     const counsellors = await model.getAllCounsellorsName();
-    res.json({ success: true, counsellors });
+    return res.status(200).json({
+      success: true,
+      counsellors
+    });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
+
 
 exports.deleteCounsellor = async (req, res) => {
     try {

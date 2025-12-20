@@ -11,6 +11,7 @@ exports.getAllPatients = async () => {
       u.city,
       u.street,
       u.postalCode,
+      u.password,
       p.dob,
       p.gender
     FROM patient p
@@ -39,26 +40,24 @@ exports.addPatient = async (patient) => {
     city,
     street,
     postalCode,
-    password, // include password
+    password,
     dob,
-    gender
+    gender,
   } = patient;
 
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
 
-    // 1. insert into user_t
     const [userResult] = await conn.query(
-      `INSERT INTO user_t 
-      (name, email, contactNumber, city, street, postalCode, role, password)
-      VALUES (?, ?, ?, ?, ?, ?, 'patient', ?)`,
+      `INSERT INTO user_t
+       (name, email, contactNumber, city, street, postalCode, role, password)
+       VALUES (?, ?, ?, ?, ?, ?, 'patient', ?)`,
       [name, email, contactNumber, city, street, postalCode, password]
     );
 
     const userID = userResult.insertId;
 
-    // 2. insert into patient
     await conn.query(
       `INSERT INTO patient (patientID, dob, gender)
        VALUES (?, ?, ?)`,
@@ -76,7 +75,7 @@ exports.addPatient = async (patient) => {
       street,
       postalCode,
       dob,
-      gender
+      gender,
     };
   } catch (err) {
     await conn.rollback();
@@ -85,6 +84,7 @@ exports.addPatient = async (patient) => {
     conn.release();
   }
 };
+
 
 /* ================= GET PATIENT BY ID ================= */
 exports.getPatientById = async (patientID) => {
@@ -97,6 +97,7 @@ exports.getPatientById = async (patientID) => {
       u.city,
       u.street,
       u.postalCode,
+      u.password,
       p.dob,
       p.gender
     FROM patient p
@@ -116,30 +117,45 @@ exports.updatePatient = async (patientID, data) => {
     city,
     street,
     postalCode,
-    password, // optionally update password
+    password,
     dob,
-    gender
+    gender,
   } = data;
 
+  console.log(data);
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
 
-    const [rows] = await conn.query(
+    const [exists] = await conn.query(
       "SELECT patientID FROM patient WHERE patientID = ?",
       [patientID]
     );
 
-    if (rows.length === 0) return null;
+    if (exists.length === 0) return null;
 
-    await conn.query(
-      `UPDATE user_t
-       SET name=?, email=?, contactNumber=?, city=?, street=?, postalCode=? ${password ? ', password=?' : ''}
-       WHERE userID=?`,
-      password
-        ? [name, email, contactNumber, city, street, postalCode, password, patientID]
-        : [name, email, contactNumber, city, street, postalCode, patientID]
-    );
+    let userQuery = `
+      UPDATE user_t
+      SET name=?, email=?, contactNumber=?, city=?, street=?, postalCode=?
+    `;
+    const params = [
+      name,
+      email,
+      contactNumber,
+      city,
+      street,
+      postalCode,
+    ];
+
+    if (password) {
+      userQuery += `, password=?`;
+      params.push(password);
+    }
+
+    userQuery += ` WHERE userID=?`;
+    params.push(patientID);
+
+    await conn.query(userQuery, params);
 
     await conn.query(
       `UPDATE patient SET dob=?, gender=? WHERE patientID=?`,
@@ -155,6 +171,7 @@ exports.updatePatient = async (patientID, data) => {
     conn.release();
   }
 };
+
 
 /* ================= DELETE PATIENT ================= */
 exports.deletePatient = async (patientID) => {

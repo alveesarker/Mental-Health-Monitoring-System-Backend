@@ -16,16 +16,15 @@ const getById = async (id) => {
 
 // CREATE
 const create = async (alert) => {
-    const { alertType, alertLevel, alertMessage, timestamp, status, counsellorID, patientID, analysisID } = alert;
+    const { alertType, alertMessage, timestamp, status, counsellorID, patientID, analysisID } = alert;
 
     const sql = `
-        INSERT INTO crisisalert (alertType, alertLevel, alertMessage, timestamp, status, counsellorID, patientID, analysisID)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO crisisalert (alertType, alertMessage, timestamp, status, counsellorID, patientID, analysisID)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     await db.query(sql, [
         alertType,
-        alertLevel,
         alertMessage,
         timestamp,
         status,
@@ -39,17 +38,16 @@ const create = async (alert) => {
 
 // UPDATE
 const update = async (id, alert) => {
-    const { alertType, alertLevel, alertMessage, timestamp, status, counsellorID, patientID, analysisID } = alert;
+    const { alertType, alertMessage, timestamp, status, counsellorID, patientID, analysisID } = alert;
 
     const sql = `
         UPDATE crisisalert
-        SET alertType=?, alertLevel=?, alertMessage=?, timestamp=?, status=?, counsellorID=?, patientID=?, analysisID=?
+        SET alertType=?, alertMessage=?, timestamp=?, status=?, counsellorID=?, patientID=?, analysisID=?
         WHERE alertID=?
     `;
 
     await db.query(sql, [
         alertType,
-        alertLevel,
         alertMessage,
         timestamp,
         status,

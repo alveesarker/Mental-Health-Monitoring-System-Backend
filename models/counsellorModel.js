@@ -27,7 +27,8 @@ exports.insertCounsellor = async (data) => {
         availability,
         street,
         city,
-        postalCode
+        postalCode,
+        password
     } = counsellor;
 
     const conn = await db.getConnection();
@@ -37,9 +38,9 @@ exports.insertCounsellor = async (data) => {
         // user_t
         const [userRes] = await conn.query(
             `INSERT INTO user_t 
-       (name, email, contactNumber, street, city, postalCode, role)
-       VALUES (?, ?, ?, ?, ?, ?, 'counsellor')`,
-            [name, email, contactNumber, street, city, postalCode]
+       (name, email, contactNumber, street, city, postalCode, password, role)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'counsellor')`,
+            [name, email, contactNumber, street, city, postalCode, password]
         );
 
         const counsellorID = userRes.insertId;
@@ -108,7 +109,7 @@ exports.updateCounsellor = async (id, data) => {
         // update user_t
         await conn.query(
             `UPDATE user_t
-       SET name=?, email=?, contactNumber=?, street=?, city=?, postalCode=?
+       SET name=?, email=?, contactNumber=?, street=?, city=?, postalCode=?, password=?
        WHERE userID=?`,
             [
                 counsellor.name,
@@ -117,6 +118,7 @@ exports.updateCounsellor = async (id, data) => {
                 counsellor.street,
                 counsellor.city,
                 counsellor.postalCode,
+                counsellor.password,
                 id
             ]
         );
@@ -205,6 +207,7 @@ exports.getCounsellorMain = async () => {
       u.street,
       u.city,
       u.postalCode,
+      u.password,
       c.yearOfExperience,
       c.availability
     FROM counsellor c
@@ -225,6 +228,7 @@ exports.getCounsellorDetails = async (id) => {
       u.street,
       u.city,
       u.postalCode,
+      u.password,
       c.yearOfExperience,
       c.availability
     FROM counsellor c

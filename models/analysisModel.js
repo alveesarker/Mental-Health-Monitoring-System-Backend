@@ -19,11 +19,11 @@ const create = async (analysis) => {
     const { riskScore, sentimentScore, issue, emotionalClassification } = analysis;
 
     const sql = `
-    INSERT INTO analysis (riskScore, sentimentScore, issue, emotionalClassification)
-    VALUES (?, ?, ?, ?)
-  `;
+        INSERT INTO analysis (riskScore, sentimentScore, issue, emotionalClassification)
+        VALUES (?, ?, ?, ?)
+    `;
 
-    await db.query(
+    const [result] = await db.query(
         sql,
         [riskScore, sentimentScore, issue, emotionalClassification]
     );
@@ -36,11 +36,10 @@ const update = async (id, analysis) => {
     const { riskScore, sentimentScore, issue, emotionalClassification } = analysis;
 
     const sql = `
-    UPDATE analysis
-    SET riskScore=?, sentimentScore=?, issue=?, emotionalClassification=?
-    WHERE analysisID=?
-  `;
-
+        UPDATE analysis
+        SET riskScore=?, sentimentScore=?, issue=?, emotionalClassification=?
+        WHERE analysisID=?
+    `;
 
     await db.query(sql, [riskScore, sentimentScore, issue, emotionalClassification, id]);
     return true;
@@ -49,7 +48,6 @@ const update = async (id, analysis) => {
 // DELETE ANALYSIS
 const remove = async (id) => {
     const sql = `DELETE FROM analysis WHERE analysisID=?`;
-
     await db.query(sql, [id]);
     return true;
 };

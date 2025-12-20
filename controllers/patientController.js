@@ -21,9 +21,9 @@ exports.getPatients = async (req, res) => {
 
 exports.addPatients = async (req, res) => {
   try {
-    const { name, email, dob, gender, contactNumber, city, street, postalCode } = req.body;
+    const { name, email, dob, gender, contactNumber, city, street, postalCode, password } = req.body;
 
-    if (!name || !email || !dob || !gender || !contactNumber || !city || !street || !postalCode) {
+    if (!name || !email || !dob || !gender || !contactNumber || !city || !street || !postalCode || !password) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
@@ -35,7 +35,8 @@ exports.addPatients = async (req, res) => {
       contactNumber,
       city,
       street,
-      postalCode
+      postalCode,
+      password
     });
 
     // Format DOB before sending response
@@ -66,6 +67,7 @@ exports.updatePatient = async (req, res) => {
       city,
       street,
       postalCode,
+      password
     } = req.body;
 
     // Fetch existing patient
@@ -87,6 +89,7 @@ exports.updatePatient = async (req, res) => {
       city: city || existing.city,
       street: street || existing.street,
       postalCode: postalCode || existing.postalCode,
+      password: password || existing.password
     };
 
     // Update patient in DB
@@ -108,9 +111,16 @@ exports.updatePatient = async (req, res) => {
 exports.fetchAllPatientsName = async (req, res) => {
   try {
     const patients = await Patient.getAllPatientsName();
-    res.json({ success: true, patients });
+    return res.status(200).json({
+      success: true,
+      patients
+    });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 

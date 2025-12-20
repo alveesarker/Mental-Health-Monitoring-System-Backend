@@ -1,12 +1,13 @@
 const db = require("../db");
 
+/* ================= GET ALL SESSIONS ================= */
 const getAll = async () => {
   const q = `
     SELECT 
       s.*,
-      p.name AS pname,
-      c.name AS cname,
-      o.link AS onlineLink,
+      p.name AS patientName,
+      c.name AS counsellorName,
+      o.link,
       f.counsellingCenter,
       f.roomNumber
     FROM session s
@@ -17,145 +18,159 @@ const getAll = async () => {
   `;
 
   const [rows] = await db.query(q);
-  return rows.map(r => {
-    if (r.onlineLink) {
-      return {
-        ...r,
-        link: r.onlineLink
-      };
-    } else {
-      return {
-        ...r,
-        counsellingCenter: r.counsellingCenter,
-        roomNumber: r.roomNumber
-      };
-    }
-  });
+  return rows;
 };
 
+/* ================= CREATE SESSION ================= */
+const create = async (sessionData, typeData, type) => {
+  const {
+    sessionDate,
+    status,
+    duration,
+    patientID,
+    counsellorID,
+    sessionTime
+  } = sessionData;
 
-// CREATE SESSION
-const create = (sessionData, typeData, type) => {
-  const { sessionDate, status, duration, patientID, counsellorID, sessionTime } = sessionData;
+  const sessionType = type?.toLowerCase().trim();
 
-  const insertSession = `
-      INSERT INTO session(sessionDate, status, duration, patientID, counsellorID, sessionTime)
-      VALUES (?, ?, ?, ?, ?)
-    `;
-
-  db.query(
-    insertSession,
-    [sessionDate, status, duration, patientID, counsellorID, sessionTime],
-    (err, res1) => {
-      if (err) return reject(err);
-
-      const sessionID = res1.insertId;
-
-      if (type === "online") {
-        db.query(
-          `INSERT INTO online(sessionID, link) VALUES (?, ?)`,
-          [sessionID, typeData.link],
-          err => err ? reject(err) : resolve({ sessionID })
-        );
-      } else {
-        db.query(
-          `INSERT INTO offline(sessionID, counsellingCenter, roomNumber) VALUES (?, ?, ?)`,
-          [sessionID, typeData.counsellingCenter, typeData.roomNumber],
-          err => err ? reject(err) : resolve({ sessionID })
-        );
-      }
-    }
-  );
-};
-
-// UPDATE SESSION (Corrected)
-const update = async (sessionID, sessionData, typeData, type) => {
-  const { sessionDate, status, duration, sessionTime } = sessionData;
+  console.log("Type:", sessionType);
+  console.log("Type Data:", typeData);
 
   try {
+    /* ---------- INSERT SESSION ---------- */
+    const insertSessionSQL = `
+      INSERT INTO session
+      (sessionDate, status, duration, patientID, counsellorID, sessionTime, sessionType)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
 
-    console.log(status);
-    await db.query(
-      `UPDATE session 
-       SET sessionDate=?, status=?, duration=?, sessionTime=?, sessionType=?
-       WHERE sessionID=?`,
-      [sessionDate, status, duration, sessionTime, type, sessionID]
-    );
+    const [result] = await db.query(insertSessionSQL, [
+      sessionDate,
+      status,
+      duration,
+      patientID,
+      counsellorID,
+      sessionTime,
+      sessionType
+    ]);
 
-    // Delete old types
-    await db.query(`DELETE FROM online WHERE sessionID=?`, [sessionID]);
-    await db.query(`DELETE FROM offline WHERE sessionID=?`, [sessionID]);
+    const sessionID = result.insertId;
 
-    // Insert new type
-    if (type === "online") {
-      if (!typeData.link) throw new Error("Missing link");
+    /* ---------- INSERT SESSION TYPE ---------- */
+    if (sessionType === "online") {
+      if (!typeData?.link) {
+        throw new Error("Missing meeting link");
+      }
 
       await db.query(
-        `INSERT INTO online(sessionID, link) VALUES (?, ?)`,
+        `INSERT INTO online (sessionID, link) VALUES (?, ?)`,
         [sessionID, typeData.link]
       );
-    } else {
-      if (!typeData.counsellingCenter || !typeData.roomNumber)
-        throw new Error("Missing offline data");
+
+    } else if (sessionType === "offline") {
+      if (!typeData?.counsellingCenter || !typeData?.roomNumber) {
+        throw new Error("Missing offline session details");
+      }
 
       await db.query(
-        `INSERT INTO offline(sessionID, counsellingCenter, roomNumber) VALUES (?, ?, ?)`,
+        `INSERT INTO offline (sessionID, counsellingCenter, roomNumber)
+         VALUES (?, ?, ?)`,
         [
           sessionID,
           typeData.counsellingCenter,
-          typeData.roomNumber,
+          typeData.roomNumber
         ]
       );
+
+    } else {
+      throw new Error("Invalid session type");
     }
 
-    return true;
+    return { sessionID };
+
   } catch (err) {
-    console.error("Error:", err);
+    console.error("CREATE SESSION ERROR:", err);
     throw err;
   }
 };
 
 
+/* ================= UPDATE SESSION ================= */
+const update = async (sessionID, sessionData, typeData, type) => {
+  const { sessionDate, status, duration, sessionTime } = sessionData;
+
+  await db.query(
+    `UPDATE session 
+     SET sessionDate=?, status=?, duration=?, sessionTime=?, sessionType=?
+     WHERE sessionID=?`,
+    [sessionDate, status, duration, sessionTime, type, sessionID]
+  );
+
+  await db.query(`DELETE FROM online WHERE sessionID=?`, [sessionID]);
+  await db.query(`DELETE FROM offline WHERE sessionID=?`, [sessionID]);
+
+  if (type === "online") {
+    await db.query(
+      `INSERT INTO online(sessionID, link) VALUES (?, ?)`,
+      [sessionID, typeData.link]
+    );
+  } else {
+    await db.query(
+      `INSERT INTO offline(sessionID, counsellingCenter, roomNumber)
+       VALUES (?, ?, ?)`,
+      [sessionID, typeData.counsellingCenter, typeData.roomNumber]
+    );
+  }
+
+  return true;
+};
+
+/* ================= GET SESSION DETAILS ================= */
 const getSessionDetailsByID = async (sessionID) => {
   const sql = `
     SELECT 
-      s.sessionID, s.sessionDate, s.sessionTime, s.status, s.duration, s.sessionType,
-      p.*, 
-      r.rating, r.comfortLevel, r.clarityLevel, r.comment AS ratingComment,
-      u.name AS patientName,
-      c.name AS counsellorName
+      s.*,
+      u1.name AS patientName,
+      u2.name AS counsellorName,
+      r.rating, r.comfortLevel, r.clarityLevel, r.comment
     FROM session s
-    LEFT JOIN progress p ON s.sessionID = p.sessionID
+    LEFT JOIN user_t u1 ON s.patientID = u1.userID
+    LEFT JOIN user_t u2 ON s.counsellorID = u2.userID
     LEFT JOIN rating r ON s.sessionID = r.sessionID
-    LEFT JOIN patient u ON s.patientID = u.patientID
-    LEFT JOIN counsellor c ON s.counsellorID = c.counsellorID
-    WHERE s.sessionID = ?;
+    WHERE s.sessionID = ?
   `;
 
   const [rows] = await db.query(sql, [sessionID]);
+  return rows[0];
+};
+
+/* ================= DELETE SESSION ================= */
+const remove = (sessionID) => {
+  return new Promise((resolve, reject) => {
+    db.query(`DELETE FROM online WHERE sessionID=?`, [sessionID]);
+    db.query(`DELETE FROM offline WHERE sessionID=?`, [sessionID]);
+
+    console.log("hello");
+    db.query(
+      `DELETE FROM session WHERE sessionID=?`,
+      [sessionID],
+      err => err ? reject(err) : resolve()
+    );
+  });
+};
+
+/* ================= GET ALL SESSION IDS ================= */
+const getAllSessionID = async () => {
+  const [rows] = await db.query(`SELECT sessionID FROM session`);
   return rows;
 };
 
-// DELETE
-const remove = (sessionID) => {
-  db.query(`DELETE FROM online WHERE sessionID=?`, [sessionID]);
-  db.query(`DELETE FROM offline WHERE sessionID=?`, [sessionID]);
-
-  db.query(
-    `DELETE FROM session WHERE sessionID=?`,
-    [sessionID],
-    err => err ? reject(err) : resolve()
-  );
+module.exports = {
+  getAll,
+  create,
+  update,
+  remove,
+  getSessionDetailsByID,
+  getAllSessionID
 };
-
-
-//Return all session id's
-const getAllSessionID = async () => {
-  // db is a promise-based connection or pool
-  const [rows] = await db.query(`SELECT sessionID FROM session`);
-  return rows; // [{ sessionID: 1 }, { sessionID: 2 }, ...]
-};
-
-
-
-module.exports = { getAll, create, update, remove, getSessionDetailsByID, getAllSessionID };
