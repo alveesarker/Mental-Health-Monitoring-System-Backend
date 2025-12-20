@@ -22,6 +22,7 @@ const questionRoute = require('./routes/questionRoute');
 const emergencycontact = require('./routes/emergencyContactRoute');
 const adminDashboardRouter = require('./routes/adminDashboardRouter');
 const assignmentRoute = require('./routes/assignmentRoute');
+const dRecommendationRouter = require('./routes/deliveredRecommendationAutoRoutes');
 app.use("/patients", patientRoutes);
 app.use("/counsellor", counsellorRoute);
 app.use("/sessions", sessionRoutes);
@@ -36,7 +37,7 @@ app.use("/questions", questionRoute);
 app.use("/emergency-contact", emergencycontact);
 app.use("/dashboard", adminDashboardRouter);
 app.use("/assignment", assignmentRoute);
-
+app.use("/d-reco", dRecommendationRouter);
 //
 
 app.get('/', (req, res) => res.json({ message: 'MHM API running' }));

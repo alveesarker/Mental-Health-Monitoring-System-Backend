@@ -45,7 +45,7 @@ const fetchSessionDetails = async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    return res.json(rows[0]);
+    return res.json(rows);
   } catch (error) {
     return res.status(500).json({
       message: "Server error",
@@ -76,11 +76,69 @@ const deleteSession = async (req, res) => {
   }
 };
 
+/* ================= GET PENDING SESSIONS FOR PATIENT ================= */
+const getPendingSessionsByPatient = async (req, res) => {
+  try {
+    const { patientID } = req.params;
+
+    if (!patientID) {
+      return res.status(400).json({
+        success: false,
+        message: "patientID is required"
+      });
+    }
+
+    const sessions =
+      await Session.getPendingSessionsByPatientID(patientID);
+
+    res.json({
+      success: true,
+      data: sessions
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: e.message
+    });
+  }
+};
+
+/* ================= GET ALL SESSIONS FOR PATIENT ================= */
+const getAllSessionsByPatient = async (req, res) => {
+  try {
+    const { patientID } = req.params;
+
+    if (!patientID) {
+      return res.status(400).json({
+        success: false,
+        message: "patientID is required"
+      });
+    }
+
+    const sessions =
+      await Session.getAllSessionsByPatientID(patientID);
+
+    res.json({
+      success: true,
+      data: sessions
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: e.message
+    });
+  }
+};
+
+
+
 module.exports = {
   getSessions,
   createSession,
   updateSession,
   deleteSession,
   fetchSessionDetails,
-  getAllIDs
+  getAllIDs,
+  getPendingSessionsByPatient,
+  getAllSessionsByPatient 
 };

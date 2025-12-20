@@ -21,6 +21,27 @@ const getAll = async () => {
   return rows;
 };
 
+/* ================= GET ALL SESSIONS BY PATIENT ================= */
+const getAllSessionsByPatientID = async (patientID) => {
+  const q = `
+    SELECT
+      s.sessionID,
+      s.sessionDate,
+      s.sessionTime,
+      s.status,
+      u.name AS counsellorName
+    FROM session s
+    LEFT JOIN user_t u 
+      ON s.counsellorID = u.userID
+    WHERE s.patientID = ?
+    ORDER BY s.sessionDate DESC, s.sessionTime DESC
+  `;
+
+  const [rows] = await db.query(q, [patientID]);
+  return rows;
+};
+
+
 /* ================= CREATE SESSION ================= */
 const create = async (sessionData, typeData, type) => {
   const {
@@ -125,21 +146,42 @@ const update = async (sessionID, sessionData, typeData, type) => {
 
   return true;
 };
-
-/* ================= GET SESSION DETAILS ================= */
+/* ================= GET SESSION DETAILS WITH RATING ================= */
 const getSessionDetailsByID = async (sessionID) => {
   const sql = `
-    SELECT 
-      s.*,
-      u1.name AS patientName,
-      u2.name AS counsellorName,
-      r.rating, r.comfortLevel, r.clarityLevel, r.comment
-    FROM session s
-    LEFT JOIN user_t u1 ON s.patientID = u1.userID
-    LEFT JOIN user_t u2 ON s.counsellorID = u2.userID
-    LEFT JOIN rating r ON s.sessionID = r.sessionID
-    WHERE s.sessionID = ?
-  `;
+  SELECT 
+    s.sessionID,
+    s.sessionDate,
+    s.sessionTime,
+    s.duration,
+    s.status,
+    s.sessionType,
+
+    p.name AS patientName,
+    c.name AS counsellorName,
+
+    -- Rating
+    r.rating,
+    r.comfortLevel,
+    r.clarityLevel,
+    r.comment AS ratingComment,
+
+    -- Progress
+    sp.stressLevel,
+    sp.depressionLevel,
+    sp.workPerformance,
+    sp.energyLevel,
+    sp.fatigueLevel,
+    sp.note
+
+  FROM session s
+  LEFT JOIN user_t p ON s.patientID = p.userID
+  LEFT JOIN user_t c ON s.counsellorID = c.userID
+  LEFT JOIN rating r ON s.sessionID = r.sessionID
+  LEFT JOIN progress sp ON s.sessionID = sp.sessionID
+  WHERE s.sessionID = ?
+`;
+
 
   const [rows] = await db.query(sql, [sessionID]);
   return rows[0];
@@ -160,6 +202,29 @@ const remove = (sessionID) => {
   });
 };
 
+/* ================= GET PENDING SESSIONS BY PATIENT ================= */
+const getPendingSessionsByPatientID = async (patientID) => {
+  const q = `
+    SELECT 
+      s.*,
+      c.name AS counsellorName,
+      o.link,
+      f.counsellingCenter,
+      f.roomNumber
+    FROM session s
+    LEFT JOIN user_t c ON s.counsellorID = c.userID
+    LEFT JOIN online o ON s.sessionID = o.sessionID
+    LEFT JOIN offline f ON s.sessionID = f.sessionID
+    WHERE s.patientID = ?
+      AND s.status = 'pending'
+    ORDER BY s.sessionDate ASC, s.sessionTime ASC
+  `;
+
+  const [rows] = await db.query(q, [patientID]);
+  return rows;
+};
+
+
 /* ================= GET ALL SESSION IDS ================= */
 const getAllSessionID = async () => {
   const [rows] = await db.query(`SELECT sessionID FROM session`);
@@ -172,5 +237,7 @@ module.exports = {
   update,
   remove,
   getSessionDetailsByID,
-  getAllSessionID
+  getAllSessionID,
+  getPendingSessionsByPatientID,
+  getAllSessionsByPatientID
 };

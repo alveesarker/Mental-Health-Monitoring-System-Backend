@@ -19,6 +19,22 @@ exports.updateCounsellor = async (req, res) => {
     }
 };
 
+exports.getAssignedCounsellorsByPatient = async (req, res) => {
+    try {
+      const { patientID } = req.params;
+      const counsellors = await model.getAssignedCounsellorsByPatient(patientID);
+
+      if (!counsellors || counsellors.length === 0) {
+        return res.status(404).json({ message: "No assigned counsellors found for this patient" });
+      }
+
+      res.json(counsellors);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: err.message });
+    }
+  }
+
 
 exports.fetchAllCounsellorsName = async (req, res) => {
   try {

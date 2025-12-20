@@ -92,6 +92,33 @@ exports.insertCounsellor = async (data) => {
     }
 };
 
+exports.getAssignedCounsellorsByPatient = async (patientID) => {
+    const sql = `
+      SELECT 
+        u.userID AS counsellorID,
+        u.name,
+        u.email,
+        u.contactNumber,
+        c.yearOfExperience,
+        c.availability,
+        GROUP_CONCAT(DISTINCT cs.specialization) AS specializations,
+        GROUP_CONCAT(DISTINCT CONCAT(csch.day, ' ', csch.startTime, '-', csch.endTime, '(', csch.mode, ')') SEPARATOR '; ') AS schedule,
+        a.startDate,
+        a.endDate
+      FROM assignment a
+      INNER JOIN user_t u ON a.counsellorID = u.userID
+      LEFT JOIN counsellor c ON u.userID = c.counsellorID
+      LEFT JOIN counsellor_specialization cs ON u.userID = cs.counsellorID
+      LEFT JOIN counsellor_schedule csch ON u.userID = csch.counsellorID
+      WHERE a.patientID = ?
+        AND (a.endDate IS NULL OR a.endDate >= CURDATE())
+      GROUP BY u.userID
+      ORDER BY u.name ASC
+    `;
+    const [rows] = await db.query(sql, [patientID]);
+    return rows;
+  }
+
 
 /* ================= UPDATE COUNSELLOR ================= */
 exports.updateCounsellor = async (id, data) => {

@@ -35,6 +35,28 @@ module.exports = {
         return rows;
     },
 
+    getLast7Logs: async (patientID) => {
+        const [rows] = await db.query(
+            `SELECT timestamp, mood, stressLevel AS stress
+       FROM DailyLog
+       WHERE patientID = ?
+       ORDER BY timestamp DESC
+       LIMIT 7`,
+            [patientID]
+        );
+
+        // Map to desired output format (day as DD/MM)
+        return rows.map((row) => {
+            const date = new Date(row.timestamp);
+            const day = `${date.getDate()}/${date.getMonth() + 1}`;
+            return {
+                day,
+                mood: row.mood,
+                stress: row.stress,
+            };
+        });
+    },
+
     // Get single log
     getOne: async (patientID, timestamp) => {
         const [rows] = await db.query(

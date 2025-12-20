@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/counsellorController");
 
+router.get("/assigned/:patientID", controller.getAssignedCounsellorsByPatient);
 
 router.get("/cname", controller.fetchAllCounsellorsName);
 // CREATE

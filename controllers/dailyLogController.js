@@ -12,6 +12,34 @@ module.exports = {
     }
   },
 
+  // Get all logs for a specific patient
+  getLogsByPatient: async (req, res) => {
+    try {
+      const { patientID } = req.params;
+      const logs = await DailyLog.getAll(patientID); // reuse existing model method
+      res.json({ success: true, logs });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to load logs for patient" });
+    }
+  },
+
+  getLast7DailyLogs: async (req, res) => {
+    try {
+      console.log("Hello");
+      const { patientID } = req.params;
+      if (!patientID) return res.status(400).json({ success: false, error: "Patient ID required" });
+
+      const logs = await DailyLog.getLast7Logs(patientID);
+
+      res.json({ success: true, logs });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, error: "Failed to fetch last 7 daily logs" });
+    }
+  },
+
+
+
   getLog: async (req, res) => {
     try {
       const { patientID, timestamp } = req.params;
