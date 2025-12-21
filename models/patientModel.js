@@ -20,6 +20,34 @@ exports.getAllPatients = async () => {
   `);
   return rows;
 };
+exports.getAssignedPatientsForCounsellor = async (counsellorID) => {
+  const [rows] = await db.query(`
+    SELECT 
+      p.patientID,
+      u.name AS Name,
+      u.email AS Email,
+      p.dob AS DateOfBirth,
+      p.gender AS Gender,
+      u.contactNumber AS Contact,
+      u.city AS City
+    FROM assignment a
+    JOIN patient p ON a.patientID = p.patientID
+    JOIN user_t u ON p.patientID = u.userID
+    WHERE a.counsellorID = ?
+      AND (a.endDate IS NULL OR a.endDate >= CURDATE())
+    ORDER BY a.startDate DESC
+  `, [counsellorID]);
+
+  // Format dates
+  const formattedRows = rows.map(patient => ({
+    ...patient,
+    DateOfBirth: patient.DateOfBirth ? patient.DateOfBirth.toISOString().split('T')[0] : null
+  }));
+
+  return formattedRows;
+};
+
+
 
 /* ================= GET ALL PATIENT NAMES ================= */
 exports.getAllPatientsName = async () => {

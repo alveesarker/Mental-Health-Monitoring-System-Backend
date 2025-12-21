@@ -7,6 +7,10 @@ const controller = require("../controllers/sessionController");
 // Static / specific routes first
 router.get("/session-details/:id", controller.fetchSessionDetails);
 router.get("/sessionids", controller.getAllIDs);
+router.post("/request", controller.requestSession);
+
+router.get("/:counsellorID/cpending", controller.getPendingSessionsByCounsellor);
+router.get("/c/:counsellorID", controller.getAllSessionsByCounsellor);
 
 // Patient-based routes
 router.get("/:patientID/pending", controller.getPendingSessionsByPatient);

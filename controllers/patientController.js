@@ -124,6 +124,34 @@ exports.fetchAllPatientsName = async (req, res) => {
   }
 };
 
+exports.getAssignedPatientsForCounsellor = async (req, res) => {
+  try {
+    const { counsellorID } = req.params;
+console.log(counsellorID);
+    if (!counsellorID) {
+      return res.status(400).json({
+        success: false,
+        message: "Counsellor ID is required"
+      });
+    }
+
+    // Call the model to get simplified patient info
+    const patients = await Patient.getAssignedPatientsForCounsellor(counsellorID);
+
+    return res.status(200).json({
+      success: true,
+      count: patients.length,
+      data: patients
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+
 
 exports.deletePatient = async (req, res) => {
   try {

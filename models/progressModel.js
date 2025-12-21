@@ -37,6 +37,7 @@ const ProgressModel = {
       note,
     } = data;
 
+
     const sql = `
       INSERT INTO progress 
       (sessionID, stability, stressLevel, depressionLevel, workPerformance, energyLevel, fatigueLevel, note)
@@ -53,6 +54,7 @@ const ProgressModel = {
       fatigueLevel,
       note,
     ]);
+
 
     return result;
   },
@@ -93,6 +95,28 @@ const ProgressModel = {
     ]);
 
     return result;
+  },
+
+   getByPatientID: async (patientID) => {
+    const sql = `
+      SELECT 
+        p.sessionID,
+        s.sessionDate,
+        p.stability,
+        p.depressionLevel,
+        p.stressLevel,
+        p.workPerformance,
+        p.energyLevel,
+        p.fatigueLevel,
+        p.note
+      FROM progress p
+      JOIN session s ON p.sessionID = s.sessionID
+      WHERE s.patientID = ?
+      ORDER BY s.sessionDate DESC
+    `;
+
+    const [rows] = await db.execute(sql, [patientID]);
+    return rows;
   },
 
   // Delete progress by sessionID

@@ -5,6 +5,9 @@ const ProgressController = require("../controllers/progressController");
 // Get all progress (search by sessionID optional)
 router.get("/", ProgressController.getAllProgress);
 
+// Get all progress for a patient
+router.get("/patient/:patientID", ProgressController.getProgressByPatientID);
+
 // Get progress by sessionID
 router.get("/:sessionID", ProgressController.getProgressBySessionID);
 

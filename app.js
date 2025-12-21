@@ -18,11 +18,12 @@ const crisisAlertRoutes = require("./routes/crisisAlertRoutes");
 const authRoutes = require('./routes/authRoutes');
 const progressRoute = require('./routes/progressRoutes');
 const ratingRoutes = require("./routes/ratingRouter");
-const questionRoute = require('./routes/questionRoute');
+const questionRouter = require('./routes/questionRouter');
 const emergencycontact = require('./routes/emergencyContactRoute');
 const adminDashboardRouter = require('./routes/adminDashboardRouter');
 const assignmentRoute = require('./routes/assignmentRoute');
 const dRecommendationRouter = require('./routes/deliveredRecommendationAutoRoutes');
+const questionRoutes = require('./routes/questionRoute');
 app.use("/patients", patientRoutes);
 app.use("/counsellor", counsellorRoute);
 app.use("/sessions", sessionRoutes);
@@ -33,11 +34,12 @@ app.use("/crisisalerts", crisisAlertRoutes);
 app.use("/progress", progressRoute);
 app.use('/auth', authRoutes);
 app.use("/ratings", ratingRoutes);
-app.use("/questions", questionRoute);
+app.use("/questions", questionRouter);
 app.use("/emergency-contact", emergencycontact);
 app.use("/dashboard", adminDashboardRouter);
 app.use("/assignment", assignmentRoute);
 app.use("/d-reco", dRecommendationRouter);
+app.use('/questions', questionRoutes);
 //
 
 app.get('/', (req, res) => res.json({ message: 'MHM API running' }));

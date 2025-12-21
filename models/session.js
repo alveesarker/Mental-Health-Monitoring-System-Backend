@@ -21,6 +21,34 @@ const getAll = async () => {
   return rows;
 };
 
+const request = async ({
+  patientID,
+  counsellorID,
+  sessionType,
+  status,
+}) => {
+  try {
+    const sql = `
+      INSERT INTO session
+      (patientID, counsellorID, sessionType, status)
+      VALUES (?, ?, ?, ?)
+    `;
+
+    const [result] = await db.query(sql, [
+      patientID,
+      counsellorID,
+      sessionType.toLowerCase(),
+      status,
+    ]);
+
+    return { sessionID: result.insertId };
+  } catch (err) {
+    console.error("REQUEST SESSION MODEL ERROR:", err);
+    throw err;
+  }
+};
+
+
 /* ================= GET ALL SESSIONS BY PATIENT ================= */
 const getAllSessionsByPatientID = async (patientID) => {
   const q = `
@@ -40,6 +68,29 @@ const getAllSessionsByPatientID = async (patientID) => {
   const [rows] = await db.query(q, [patientID]);
   return rows;
 };
+
+/* ================= GET ALL SESSIONS BY PATIENT ================= */
+const getAllSessionsByCounsellorID = async (counsellorID) => {
+console.log(counsellorID);
+  const q = `
+    SELECT
+      s.sessionID,
+      s.sessionDate,
+      s.sessionTime,
+      s.status,
+      p.name AS counsellorName
+    FROM session s
+    LEFT JOIN user_t p
+      ON s.patientID = p.userID
+    WHERE s.counsellorID = ?
+    ORDER BY s.sessionDate DESC, s.sessionTime DESC
+  `;
+
+  const [rows] = await db.query(q, [counsellorID]);
+  return rows;
+};
+
+
 
 
 /* ================= CREATE SESSION ================= */
@@ -193,7 +244,6 @@ const remove = (sessionID) => {
     db.query(`DELETE FROM online WHERE sessionID=?`, [sessionID]);
     db.query(`DELETE FROM offline WHERE sessionID=?`, [sessionID]);
 
-    console.log("hello");
     db.query(
       `DELETE FROM session WHERE sessionID=?`,
       [sessionID],
@@ -225,6 +275,28 @@ const getPendingSessionsByPatientID = async (patientID) => {
 };
 
 
+const getPendingSessionsByCounsellorID = async (counsellorID) => {
+  const q = `
+    SELECT 
+      s.*,
+      p.name AS counsellorName,
+      o.link,
+      f.counsellingCenter,
+      f.roomNumber
+    FROM session s
+    LEFT JOIN user_t p ON s.patientID = p.userID
+    LEFT JOIN online o ON s.sessionID = o.sessionID
+    LEFT JOIN offline f ON s.sessionID = f.sessionID
+    WHERE s.counsellorID = ?
+      AND s.status = 'pending'
+    ORDER BY s.sessionDate ASC, s.sessionTime ASC
+  `;
+
+  const [rows] = await db.query(q, [counsellorID]);
+  return rows;
+};
+
+
 /* ================= GET ALL SESSION IDS ================= */
 const getAllSessionID = async () => {
   const [rows] = await db.query(`SELECT sessionID FROM session`);
@@ -239,5 +311,8 @@ module.exports = {
   getSessionDetailsByID,
   getAllSessionID,
   getPendingSessionsByPatientID,
-  getAllSessionsByPatientID
+  getAllSessionsByPatientID,
+  request,
+  getPendingSessionsByCounsellorID,
+  getAllSessionsByCounsellorID
 };

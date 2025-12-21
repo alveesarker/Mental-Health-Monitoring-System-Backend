@@ -1,17 +1,33 @@
 const express = require('express');
 const router = express.Router();
-const questionController = require('../controllers/questionController');
+const QuestionController = require('../controllers/questionController');
 
-// Get all questions with rules
-router.get('/', questionController.getAllQuestions);
+/**
+ * @route   GET /questions/patient/:patientID
+ * @desc    Get questions for a specific patient based on their data
+ * @access  Public (consider adding authentication middleware)
+ */
+router.get('/patient/:patientID', QuestionController.getPatientQuestions);
 
-// Create question
-router.post('/', questionController.createQuestion);
+/**
+ * @route   POST /questions/patient/:patientID/answers
+ * @desc    Save patient's answers
+ * @access  Public
+ */
+router.post('/patient/:patientID/answers', QuestionController.saveAnswers);
 
-// Update question
-router.put('/:questionID', questionController.updateQuestion);
+/**
+ * @route   GET /api/questions/all
+ * @desc    Get all questions (for testing/admin)
+ * @access  Public
+ */
+router.get('/all', QuestionController.getAllQuestions);
 
-// Delete question
-router.delete('/:questionID', questionController.deleteQuestion);
+/**
+ * @route   GET /api/questions/patient/:patientID/data
+ * @desc    Get patient data for debugging
+ * @access  Public
+ */
+router.get('/patient/:patientID/data', QuestionController.getPatientData);
 
 module.exports = router;

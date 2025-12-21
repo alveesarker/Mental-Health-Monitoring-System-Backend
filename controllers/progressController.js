@@ -17,6 +17,29 @@ const ProgressController = {
         }
     },
 
+     getProgressByPatientID: async (req, res) => {
+        try {
+            const { patientID } = req.params;
+            const data = await ProgressModel.getByPatientID(patientID);
+
+            if (!data || data.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "No progress records found for this patient",
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                data: data,
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
 
     // GET progress by sessionID
     getProgressBySessionID: async (req, res) => {
@@ -47,7 +70,6 @@ const ProgressController = {
     createProgress: async (req, res) => {
         try {
             const result = await ProgressModel.create(req.body);
-
             res.status(201).json({
                 success: true,
                 message: "Progress added successfully",

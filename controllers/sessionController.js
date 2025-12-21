@@ -9,9 +9,49 @@ const getSessions = async (req, res) => {
   }
 };
 
+const requestSession = async (req, res) => {
+  try {
+    const {
+      patientID,
+      counsellorID,
+      sessionType,
+      status
+    } = req.body;
+
+    console.log(patientID, counsellorID, sessionType, status);
+    // basic validation
+    if (!patientID || !counsellorID || !sessionType) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const result = await Session.request({
+      patientID,
+      counsellorID,
+      sessionType,
+      status: status || "Requested",
+    });
+
+    res.status(201).json({
+      success: true,
+      sessionID: result.sessionID,
+    });
+  } catch (err) {
+    console.error("REQUEST SESSION ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
 const createSession = async (req, res) => {
   try {
     const { sessionData, typeData, type } = req.body;
+    console.log(sessionData);
 
     const result = await Session.create(sessionData, typeData, type);
 
@@ -103,6 +143,31 @@ const getPendingSessionsByPatient = async (req, res) => {
   }
 };
 
+const getPendingSessionsByCounsellor = async (req, res) => {
+  try {
+    const { counsellorID } = req.params;
+    if (!counsellorID) {
+      return res.status(400).json({
+        success: false,
+        message: "counsellorID is required"
+      });
+    }
+
+    const sessions =
+      await Session.getPendingSessionsByCounsellorID(counsellorID);
+
+    res.json({
+      success: true,
+      data: sessions
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: e.message
+    });
+  }
+};
+
 /* ================= GET ALL SESSIONS FOR PATIENT ================= */
 const getAllSessionsByPatient = async (req, res) => {
   try {
@@ -129,6 +194,30 @@ const getAllSessionsByPatient = async (req, res) => {
     });
   }
 };
+/* ================= GET ALL SESSIONS FOR PATIENT ================= */
+const getAllSessionsByCounsellor = async (req, res) => {
+  try {
+    const { counsellorID } = req.params;
+    if (!counsellorID) {
+      return res.status(400).json({
+        success: false,
+        message: "counsellorID is required"
+      });
+    }
+
+    const sessions =
+      await Session.getAllSessionsByCounsellorID(counsellorID);
+    res.json({
+      success: true,
+      data: sessions
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: e.message
+    });
+  }
+};
 
 
 
@@ -140,5 +229,8 @@ module.exports = {
   fetchSessionDetails,
   getAllIDs,
   getPendingSessionsByPatient,
-  getAllSessionsByPatient 
+  getAllSessionsByPatient,
+  requestSession,
+  getPendingSessionsByCounsellor,
+  getAllSessionsByCounsellor
 };

@@ -25,7 +25,6 @@ module.exports = {
 
   getLast7DailyLogs: async (req, res) => {
     try {
-      console.log("Hello");
       const { patientID } = req.params;
       if (!patientID) return res.status(400).json({ success: false, error: "Patient ID required" });
 
