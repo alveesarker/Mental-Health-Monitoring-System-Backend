@@ -116,6 +116,29 @@ module.exports = {
     }
     ,
 
+    getByCounsellor: async (counsellorID) => {
+    const [rows] = await db.query(
+      `
+      SELECT 
+        d.patientID,
+        d.timestamp,
+        d.mood,
+        d.notes,
+        d.stressLevel,
+        d.sleepDuration
+      FROM dailylog d
+      INNER JOIN assignment a 
+        ON d.patientID = a.patientID
+      WHERE a.counsellorID = ?
+        AND a.endDate IS NULL
+      ORDER BY d.timestamp DESC
+      `,
+      [counsellorID]
+    );
+
+    return rows;
+  },
+
     // Delete a log
     delete: async (patientID, timestamp) => {
 

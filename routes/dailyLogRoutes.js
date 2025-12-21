@@ -5,6 +5,9 @@ const controller = require("../controllers/dailyLogController");
 // GET all daily logs (optional: ?patientID=3)
 router.get("/", controller.getAllLogs);
 
+// 🔹 Get all daily logs of assigned patients by counsellor
+router.get("/dcounsellor/:counsellorID", controller.getLogsByCounsellor);
+
 // Get last 7 daily logs for a particular patient
 router.get("/:patientID/last7", controller.getLast7DailyLogs);
 

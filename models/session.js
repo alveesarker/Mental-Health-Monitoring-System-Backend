@@ -71,7 +71,6 @@ const getAllSessionsByPatientID = async (patientID) => {
 
 /* ================= GET ALL SESSIONS BY PATIENT ================= */
 const getAllSessionsByCounsellorID = async (counsellorID) => {
-console.log(counsellorID);
   const q = `
     SELECT
       s.sessionID,

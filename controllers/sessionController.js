@@ -18,7 +18,6 @@ const requestSession = async (req, res) => {
       status
     } = req.body;
 
-    console.log(patientID, counsellorID, sessionType, status);
     // basic validation
     if (!patientID || !counsellorID || !sessionType) {
       return res.status(400).json({
@@ -51,7 +50,6 @@ const requestSession = async (req, res) => {
 const createSession = async (req, res) => {
   try {
     const { sessionData, typeData, type } = req.body;
-    console.log(sessionData);
 
     const result = await Session.create(sessionData, typeData, type);
 

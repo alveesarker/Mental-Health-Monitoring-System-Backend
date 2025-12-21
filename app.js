@@ -9,7 +9,7 @@ app.use(express.json());
 
 // Routes
 const patientRoutes = require("./routes/patientRoutes");
-const counsellorRoute = require("./routes/counsellorRoutes")
+const counsellorRoute = require("./routes/counsellorRoutes");
 const sessionRoutes = require("./routes/sessionRoutes");
 const dailyLogRoutes = require("./routes/dailyLogRoutes");
 const recommendationRoutes = require("./routes/recommendationRoutes");

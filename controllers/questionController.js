@@ -38,7 +38,6 @@ class QuestionController {
         try {
             const { patientID } = req.params;
             const { analysisID, answers } = req.body;
-            console.log(analysisID, answers);
 
             // Validate input
             if (!patientID || !analysisID || !Array.isArray(answers) || answers.length === 0) {

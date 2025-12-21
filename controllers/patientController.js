@@ -127,7 +127,6 @@ exports.fetchAllPatientsName = async (req, res) => {
 exports.getAssignedPatientsForCounsellor = async (req, res) => {
   try {
     const { counsellorID } = req.params;
-console.log(counsellorID);
     if (!counsellorID) {
       return res.status(400).json({
         success: false,

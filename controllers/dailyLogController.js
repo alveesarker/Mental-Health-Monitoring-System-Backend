@@ -75,6 +75,23 @@ module.exports = {
     }
   },
 
+  getLogsByCounsellor: async (req, res) => {
+    try {
+      const { counsellorID } = req.params;
+
+      if (!counsellorID) {
+        return res.status(400).json({ success: false, error: "Counsellor ID required" });
+      }
+
+      const logs = await DailyLog.getByCounsellor(counsellorID);
+
+      res.json({ success: true, logs });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, error: "Failed to load counsellor logs" });
+    }
+  },
+
   deleteLog: async (req, res) => {
     try {
       const { patientID, timestamp } = req.params;

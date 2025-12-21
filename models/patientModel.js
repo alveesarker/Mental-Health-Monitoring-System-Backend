@@ -150,7 +150,6 @@ exports.updatePatient = async (patientID, data) => {
     gender,
   } = data;
 
-  console.log(data);
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
