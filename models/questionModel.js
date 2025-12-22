@@ -293,9 +293,8 @@ class QuestionModel {
     /**
      * Save patient's answers
      */
-    static async savePatientAnswers(patientID, analysisID, answers) {
+    static async savePatientAnswers(patientID, analysisID=100, answers) {
         const connection = await pool.getConnection();
-        
         try {
             await connection.beginTransaction();
 

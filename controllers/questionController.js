@@ -37,7 +37,8 @@ class QuestionController {
     static async saveAnswers(req, res) {
         try {
             const { patientID } = req.params;
-            const { analysisID, answers } = req.body;
+            const { answers } = req.body;
+            const analysisID = 2000;
 
             // Validate input
             if (!patientID || !analysisID || !Array.isArray(answers) || answers.length === 0) {
